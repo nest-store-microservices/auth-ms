@@ -5,6 +5,7 @@ import { RpcException } from '@nestjs/microservices';
 import { PrismaClient } from 'generated/prisma';
 import { LoginDto, RegisterDto } from './dtos';
 import { JwtService } from '@nestjs/jwt';
+import { envs } from 'src/config';
 
 
 @Injectable()
@@ -100,6 +101,24 @@ export class AuthService extends PrismaClient implements OnModuleInit{
             throw new RpcException({
                 statusCode: 500,
                 error: error.message,
+            })
+        }
+    }
+
+
+    async verifyToken(token: string) {
+        try {
+            const { sub, iat, exp, ...user } = this.jwtService.verify(token, { secret: envs.JWT_SECRET });
+            
+            return {
+                user,
+                token: this.jwtService.sign({ id: sub }), // Generate a new JWT token for the user
+            }
+
+        } catch (error) {
+            throw new RpcException({
+                statusCode: 401,
+                message: 'Invalid token',
             })
         }
     }
